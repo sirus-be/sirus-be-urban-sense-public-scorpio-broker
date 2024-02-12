@@ -1,0 +1,43 @@
+FROM openjdk:17.0.2-slim
+
+WORKDIR /usr/src/scorpio
+
+ARG JAR_FILE_RUN_SCR=quarkus-run.jar
+
+COPY target/quarkus-app/. scr
+
+ENV scrdir scr
+ENV scrjar ${JAR_FILE_RUN_SCR}
+ENV DBHOST=postgres
+ENV BUSHOST=kafka
+
+## Steps to create the dsh user.
+# Add build argument so we can give the DSH user & group id (default 1001)
+ARG TENANT_ID=2011
+
+# Just to be sure, we switch to the root user.
+USER root
+
+# Copy files with DSH specific logic.
+COPY src/main/resources/dockerfiles/SirusDockerConfig/run_quarkus.sh ./run_quarkus.sh
+COPY src/main/resources/dockerfiles/SirusDockerConfig/get_signed_certificate.sh ./get_signed_certificate.sh
+
+# Setup DSH user and create necessary directories
+RUN groupadd -g ${TENANT_ID} dsh || groupmod -g ${TENANT_ID} dsh \
+ && useradd --shell /bin/bash -u ${TENANT_ID} -g ${TENANT_ID} -m dsh || usermod --shell /bin/bash -u ${TENANT_ID} -g ${TENANT_ID} dsh 
+RUN apt-get update 
+RUN apt-get install curl -y
+RUN apt-get install jq -y
+
+# Give our dsh user permission on the required folders
+RUN chown -R dsh:dsh /usr/src/scorpio
+RUN chmod +x run_quarkus.sh
+RUN chmod +x get_signed_certificate.sh
+
+
+# Switch to our DSH user
+USER ${TENANT_ID}
+
+# We need to use the exec form to avoid running our command in a subshell and omitting signals,
+# thus being unable to shut down gracefully:
+ENTRYPOINT ["./run_quarkus.sh"]

@@ -1,0 +1,254 @@
+name: Release native macos version
+on: 
+  push:
+    branches: "quarkus-release/**"
+jobs:
+  build-macos-kafka-eureka:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.1.0'
+          java-version: '17'
+          components: 'native-image'
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-macos-with-eureka-with-kafka
+        run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+          mvn clean package -DskipTests -Dnative -Deureka -Dkafka -Dos=macos -Dquarkus.profile=kafka-eureka
+      - name: show build results
+        run: |
+          ls -R
+      - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka-eureka
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          release_name: ${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release aaio
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-subscription-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          asset_content_type: application/octet-stream
+      - name: Upload Release subscription-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          asset_content_type: application/octet-stream
+      - name: Upload Release query-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          asset_content_type: application/octet-stream
+      - name: Upload Release entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          asset_content_type: application/octet-stream
+  build-macos-kafka:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.1.0'
+          java-version: '17'
+          components: 'native-image'
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-macos-with-kafka
+        run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+          mvn clean package -DskipTests -Pkafka -Dnative -Dkafka -Dos=macos -Dquarkus.profile=kafka
+      - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-macos-kafka
+          release_name: ${{steps.get-id.outputs.id}}-macos-kafka
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release aaio
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-subscription-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release subscription-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release query-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+  build-macos-aaio:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.1.0'
+          java-version: '17'
+          components: 'native-image'
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-macos-aio
+        run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+          mvn clean package -DskipTests -Dnative -Din-memory -Pin-memory -Dos=macos -Dquarkus.profile=in-memory
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-macos
+          release_name: ${{steps.get-id.outputs.id}}-macos
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-macos
+          asset_content_type: application/octet-stream

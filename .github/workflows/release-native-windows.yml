@@ -1,0 +1,407 @@
+name: Release native windows version
+on: 
+  push:
+    branches: "quarkus-release/**"
+jobs:
+  build-windows-kafka-eureka:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Configure Pagefile
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.1.0'
+          java-version: '17'
+          components: 'native-image'
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        shell: pwsh
+        run: |
+          $id='${{github.ref_name}}'.split('/')[1]
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        shell: pwsh
+        run: |
+          cd BrokerParent
+          $id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-windows-with-eureka-with-kafka
+        run: |
+          del .\BrokerParent\pom.xml
+          move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
+          mvn clean package -DskipTests -Pkafka -Dnative -Deureka -Dkafka -Dos=windows -D"quarkus.profile"=kafka-eureka 
+      - name: Create Release ${{steps.get-id.outputs.id}}-windows-kafka-eureka
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-windows-kafka-eureka
+          release_name: ${{steps.get-id.outputs.id}}-windows-kafka-eureka
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release aaio
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-subscription-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release subscription-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release query-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
+          asset_content_type: application/octet-stream
+  build-windows-kafka:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Configure Pagefile
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.1.0'
+          java-version: '17'
+          components: 'native-image'
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        shell: pwsh
+        run: |
+          $id='${{github.ref_name}}'.split('/')[1]
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        shell: pwsh
+        run: |
+          cd BrokerParent
+          $id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-windows-with-kafka
+        run: |
+          del .\BrokerParent\pom.xml
+          move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
+          mvn clean package -DskipTests -Pkafka -Dnative -Dkafka -Dos=windows -D"quarkus.profile"=kafka 
+#      - name: Start kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
+#          sleep 30
+#      - name: Start aaio windows
+#        shell: pwsh
+#        run: |
+#          AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe &
+#          sleep 3
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-aaio-localhost-environment.json
+#      - name: Stop aaio windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+#          docker system prune -a
+#          docker volume prune
+#      - name: Start kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
+#          sleep 30
+#      - name: Start EntityManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow EntityManager\target\entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start QueryManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow QueryManager\target\query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start SubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow SubscriptionManager\target\subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start RegistryManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow RegistryManager\target\registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start RegistrySubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow RegistrySubscriptionManager\target\registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start HistoryManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow HistoryManager\target\history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-dist-localhost-environment.json
+#      - name: Stop EntityManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop QueryManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop SubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop RegistryManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop RegistrySubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop HistoryManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+#          docker system prune -a
+#          docker volume prune
+      - name: Create Release ${{steps.get-id.outputs.id}}-windows-kafka
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-windows-kafka
+          release_name: ${{steps.get-id.outputs.id}}-windows-kafka
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release aaio
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-kafka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-subscription-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release subscription-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release query-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
+          asset_content_type: application/octet-stream
+  build-windows-aaio:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Configure Pagefile
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.1.0'
+          java-version: '17'
+          components: 'native-image'
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        shell: pwsh
+        run: |
+          $id='${{github.ref_name}}'.split('/')[1]
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        shell: pwsh
+        run: |
+          cd BrokerParent
+          $id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-windows-aio
+        run: |
+          del .\BrokerParent\pom.xml
+          move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
+          mvn clean package -DskipTests -Dnative -Din-memory -Pin-memory -Dos=windows -D"quarkus.profile"=in-memory 
+#      - name: Start kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-postgis.yml up &
+#          sleep 30
+#      - name: Start aaio windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-aaio-localhost-environment.json
+#      - name: Stop aaio windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+#          docker system prune -a
+#          docker volume prune
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-windows
+          release_name: ${{steps.get-id.outputs.id}}-windows
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows.exe
+          asset_content_type: application/octet-stream
